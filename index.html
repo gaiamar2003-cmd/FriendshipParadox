@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Friendship Paradox Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600;700&display=swap">
+<style>
+
+:root{color-scheme:light;--bg:#fbf8f0;--panel:#f1ecdf;--ink:#151515;--soft:#3a3a3a;--red:#9b0f1f;--green:#1e2d27;--line:#d9d0bd}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0;background:var(--bg)}
+body{color:var(--ink);font:16px/1.5 Inter,Arial,sans-serif;overflow-x:clip;border-left:14px solid var(--red)}
+.band{padding:clamp(22px,4vw,48px) max(4vw,16px);max-width:1200px;margin:0 auto}
+h1,h2{font-family:Anton,Impact,sans-serif;font-weight:400;text-transform:uppercase;line-height:1.05;margin:0;text-wrap:balance}
+h1{font-size:clamp(34px,6vw,60px)}
+h1 span{color:var(--red)}
+h2{font-size:clamp(28px,4vw,42px)}
+.rule{height:4px;border-radius:4px;background:var(--red);margin:14px 0 0;max-width:520px}
+.lead{font-size:17px;color:var(--soft);margin:0;max-width:60ch}
+.grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:28px;align-items:start;margin-top:18px}
+@media(max-width:760px){.grid{grid-template-columns:minmax(0,1fr);gap:16px}}
+.fig{position:relative;background:#fff;border:2px solid var(--line);border-radius:22px;aspect-ratio:1/0.8;overflow:hidden;width:100%}
+@media(min-width:761px){.fig{min-height:300px}}
+.fig svg{position:absolute;inset:0;width:100%;height:100%}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 16px}
+button{font:600 16px Inter,Arial,sans-serif;min-height:48px;padding:10px 20px;border-radius:999px;border:2px solid var(--green);background:#fff;color:var(--green);cursor:pointer}
+button.red{background:var(--red);border-color:var(--red);color:#fff}
+button.green{background:var(--green);color:#fff}
+button[aria-pressed=true]{background:var(--green);color:#fff}
+button:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.bar{margin:0 0 14px}
+.bar p{margin:0 0 4px;font-weight:600}
+.track{display:flex;align-items:center;gap:10px}
+.fill{height:30px;border-radius:999px;transition:width .4s}
+.val{font-family:Anton,Impact,sans-serif;font-size:30px;line-height:1;white-space:nowrap}
+.say{font-weight:600;font-size:18px;min-height:2.8em;margin:4px 0 10px}
+.say .r,.r{color:var(--red)}
+.g{color:var(--green)}
+details{background:var(--panel);border-radius:18px;padding:10px 16px;margin-top:10px}
+summary{cursor:pointer;font-weight:700;color:var(--red);min-height:32px}
+details p{margin:6px 0 0;color:var(--soft)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;margin:10px 0 0;font-size:15px}
+.dot{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:-2px;margin-right:6px}
+.toggle{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 6px}
+.toggle b{font-size:17px}
+.stats{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin:0 0 12px}
+.stat{background:var(--panel);padding:12px 14px;border-radius:18px}
+.stat p{margin:0;font-weight:600;font-size:15px}
+.big{font-family:Anton,Impact,sans-serif;font-size:clamp(34px,6vw,48px);line-height:1.1}
+.spark{position:relative;height:60px;margin-top:4px}
+.spark svg{position:absolute;inset:0;width:100%;height:100%}
+.day{font-family:Anton,Impact,sans-serif;font-size:26px;align-self:center}
+.hint{font-size:15px;color:var(--soft);margin:0 0 12px}
+hr{border:0;border-top:2px solid var(--line);margin:0 auto;max-width:1200px}
+@media(prefers-reduced-motion:reduce){.fill{transition:none}}
+@media(max-width:600px){body{border-left-width:8px}.band{padding:22px 14px}.fig.f1{aspect-ratio:1/1.05}.fig.f2{aspect-ratio:1/1.4}.lead{font-size:16px}button{padding:10px 16px;font-size:15px}.btns{gap:8px}.say{font-size:16px}.stat{padding:10px 12px}}
+</style>
+</head>
+<body>
+
+<section class="band">
+<h1>Why do your friends have <span>more friends</span> than you?</h1>
+<div class="rule"></div>
+</section>
+
+<section class="band" style="padding-top:0">
+<h2>1. The hat game</h2>
+<p class="hint">20 people. Each line is a friendship. Bigger circle = more friends.<br>Pick someone at random, then look at one of their friends. Who has more friends?</p>
+<div class="grid">
+  <div class="fig f1"><svg id="net" aria-label="A group of 20 people with their names; bigger circles have more friends"></svg></div>
+  <div>
+    <div class="btns">
+      <button class="red" id="pick1">Pick someone</button>
+      <button id="pick100">Do it 100 times</button>
+      <button id="reset1">Reset</button>
+    </div>
+    <p class="say" id="say1">Press <b>Pick someone</b>.</p>
+    <div class="bar"><p><span class="g">The person</span> picked has on average</p><div class="track"><div class="fill" id="barP" style="background:var(--green);width:0"></div><span class="val g" id="avgP">0</span><span>friends</span></div></div>
+    <div class="bar"><p><span class="r">Their friend</span> has on average</p><div class="track"><div class="fill" id="barF" style="background:var(--red);width:0"></div><span class="val r" id="avgF">0</span><span>friends</span></div></div>
+    <p class="say" id="sum1"></p>
+    <details><summary>Why does this happen?</summary><p>A popular person is the friend of many people. So when you pick someone and look at one of their friends, you very often land on a popular person. Unpopular people are the friend of only a few, so they rarely show up as "the friend". That is why your friends, on average, have more friends than you.</p></details>
+  </div>
+</div>
+</section>
+
+<hr>
+
+<section class="band">
+<h2>2. A class makes friends</h2>
+<p class="hint">60 new students arrive with no friends. Each dot is a student: <b>the bigger the dot, the more friends</b>.<br>A dot is <b class="r">red</b> when its friends have more friends than it. Go through the semester step by step.</p>
+<div class="grid">
+  <div>
+    <div class="fig f2"><svg id="cls" aria-label="60 students; size shows number of friends; red means their friends have more friends"></svg></div>
+    <div class="legend"><span><i class="dot" style="background:var(--red)"></i>My friends have more friends than me</span><span><i class="dot" style="background:var(--green)"></i>I have as many as my friends, or more</span></div>
+  </div>
+  <div>
+    <div class="btns" id="steps"></div>
+    <p class="say" id="say2" style="min-height:4.5em"></p>
+    <div class="btns"><button class="red" id="next">Next step</button><button id="restart">Restart</button></div>
+    <div class="stats">
+      <div class="stat"><p>Friends per student</p><span class="big g" id="sDeg">0</span><div class="spark"><svg id="spD"></svg></div></div>
+      <div class="stat"><p>Red students</p><span class="big r" id="sFeel">0%</span><div class="spark"><svg id="spF"></svg></div></div>
+    </div>
+    <p class="small">Tap a dot to see its friends.</p>
+    <details><summary>Why are small dots red and big dots green?</summary><p>A small dot usually has at least one friend who is a big dot, a very popular student. That popular friend pulls up the average, so the small dot's friends have more friends than it: red. A big dot is the popular one itself, so it stays green.</p></details>
+  </div>
+</div>
+<p class="hint" style="margin-top:14px">A simplified simulation, not the paper's data.</p>
+</section>
+
+<script>
+{
+const rng=seed=>{let s=seed%2147483647;if(s<=0)s+=2147483646;return()=>(s=s*16807%2147483647)/2147483647;};
+const RED="#9b0f1f",GREEN="#1e2d27",LINE="#d9d0bd",INK="#151515";
+const $=id=>document.getElementById(id);
+
+/* ---------- 1. Hat game ---------- */
+const names=["Aaron","Bea","Chris","David","Elena","Fabio","Giulia","Hugo","Irene","Jonas","Kira","Luca","Marta","Nico","Olga","Pietro","Rosa","Sam","Tea","Ugo"];
+const N1=20;let adj=[],edges=[],nodes=[],selP=-1,selF=-1;const pk={p:[],f:[],win:0};
+{
+  const r=rng(20251123);adj=Array.from({length:N1},()=>new Set());
+  const add=(a,b)=>{if(a===b||adj[a].has(b))return;adj[a].add(b);adj[b].add(a);edges.push([a,b]);};
+  for(let i=1;i<N1;i++){let tot=0;for(let j=0;j<i;j++)tot+=adj[j].size+0.4;let u=r()*tot,j=0;for(;j<i-1;j++){u-=adj[j].size+0.4;if(u<=0)break;}add(i,j);}
+  for(let k=0;k<9;k++){const a=Math.floor(r()*N1);let tot=0;for(let j=0;j<N1;j++)tot+=adj[j].size;let u=r()*tot,j=0;for(;j<N1-1;j++){u-=adj[j].size;if(u<=0)break;}add(a,j);}
+  nodes=Array.from({length:N1},(_,i)=>({x:Math.cos(i*2.4)*(0.15+0.3*r()),y:Math.sin(i*2.4)*(0.15+0.3*r()),vx:0,vy:0}));
+  for(let it=0;it<500;it++){
+    for(let i=0;i<N1;i++)for(let j=i+1;j<N1;j++){const a=nodes[i],b=nodes[j];const dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy+1e-4,f=0.0022/d2;a.vx+=dx*f;a.vy+=dy*f;b.vx-=dx*f;b.vy-=dy*f;}
+    for(const [i,j] of edges){const a=nodes[i],b=nodes[j];const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)+1e-6,f=(d-0.24)*0.05;a.vx+=dx/d*f;a.vy+=dy/d*f;b.vx-=dx/d*f;b.vy-=dy/d*f;}
+    for(const a of nodes){a.vx-=a.x*0.01;a.vy-=a.y*0.01;a.x+=a.vx;a.y+=a.vy;a.vx*=0.55;a.vy*=0.55;}
+  }
+  const xs=nodes.map(a=>a.x),ys=nodes.map(a=>a.y),mx=Math.min(...xs),Mx=Math.max(...xs),my=Math.min(...ys),My=Math.max(...ys);
+  for(const a of nodes){a.x=(a.x-mx)/(Mx-mx||1);a.y=(a.y-my)/(My-my||1);}
+}
+const deg=i=>adj[i].size;
+const fr=n=>n===1?"1 friend":n+" friends";
+const net=$("net");
+function drawNet(){
+  const W=net.clientWidth,H=net.clientHeight,pad=40,X=a=>pad+a.x*(W-2*pad),Y=a=>pad*0.8+a.y*(H-2*pad);
+  let s="";
+  for(const [i,j] of edges){const on=(i===selP&&j===selF)||(j===selP&&i===selF);
+    s+=`<line x1="${X(nodes[i])}" y1="${Y(nodes[i])}" x2="${X(nodes[j])}" y2="${Y(nodes[j])}" stroke="${on?RED:LINE}" stroke-width="${on?6:2.5}" stroke-linecap="round"/>`;}
+  nodes.forEach((a,i)=>{const r=5+Math.sqrt(deg(i))*5,c=i===selP?GREEN:(i===selF?RED:"#b9b2a3"),big=i===selP||i===selF;
+    s+=`<circle cx="${X(a)}" cy="${Y(a)}" r="${big?r+5:r}" fill="${c}" stroke="#fff" stroke-width="3"/>`;});
+  nodes.forEach((a,i)=>{const r=5+Math.sqrt(deg(i))*5,big=i===selP||i===selF;
+    s+=`<text x="${X(a)}" y="${Y(a)+r+(big?20:16)}" text-anchor="middle" style="font:${big?700:400} ${big?15:13}px Inter,Arial,sans-serif;fill:${i===selP?GREEN:(i===selF?RED:"#5a5a5a")};paint-order:stroke;stroke:#fff;stroke-width:4px">${names[i]}</text>`;});
+  net.innerHTML=s;
+}
+const roNet=new ResizeObserver(drawNet);roNet.observe(net);
+const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+const maxDeg=Math.max(...adj.map(x=>x.size));
+function pickOne(){const p=Math.floor(Math.random()*N1),nb=[...adj[p]],f=nb[Math.floor(Math.random()*nb.length)];pk.p.push(deg(p));pk.f.push(deg(f));if(deg(f)>deg(p))pk.win++;return [p,f];}
+function showHat(){
+  const p=avg(pk.p),f=avg(pk.f),n=pk.p.length;
+  $("avgP").textContent=p.toFixed(1);$("avgF").textContent=f.toFixed(1);
+  $("barP").style.width=(p/maxDeg*60)+"%";$("barF").style.width=(f/maxDeg*60)+"%";
+  $("sum1").innerHTML=n>=5?`In <span class="r">${pk.win} picks out of ${n}</span>, the friend had more friends than the person.`:"";
+}
+$("pick1").onclick=()=>{[selP,selF]=pickOne();
+  const P=names[selP],F=names[selF];
+  $("say1").innerHTML=`<span class="g">${P}</span> has ${fr(deg(selP))}. ${P}'s friend <span class="r">${F}</span> has ${fr(deg(selF))}.`+(deg(selF)>deg(selP)?` The friend is more popular.`:deg(selF)<deg(selP)?` This time the person wins.`:` Same number.`);
+  drawNet();showHat();};
+$("pick100").onclick=()=>{for(let k=0;k<100;k++)pickOne();selP=-1;selF=-1;$("say1").innerHTML="Done: 100 people picked, and one friend of each.";drawNet();showHat();};
+$("reset1").onclick=()=>{pk.p=[];pk.f=[];pk.win=0;selP=-1;selF=-1;$("say1").innerHTML="Press <b>Pick someone</b>.";drawNet();showHat();};
+showHat();
+
+/* ---------- 2. A class makes friends ---------- */
+const N=60,DAYS=40,COLS=10,STEPS=[1,3,7,20,40];
+const mkPos=k=>{const r=rng(7),out=[];for(let i=0;i<N;i++){const c=i%k,w=Math.floor(i/k);out.push({x:(c+0.5+(r()-0.5)*0.5)/k,y:(w+0.5+(r()-0.5)*0.5)/(N/k)});}return out;};
+const POS={10:mkPos(10),6:mkPos(6)};let pos=POS[10],cols=COLS;
+/* run the whole semester once, keep every day */
+const snaps=[],hist=[];
+{
+  const r2=rng(1),a=Array.from({length:N},()=>new Set());
+  for(let day=1;day<=DAYS;day++){
+    const T=Math.round(N*0.5/(1+day/8)),today=[];
+    for(let k=0;k<T;k++){const i=Math.floor(r2()*N);let j=-1;
+      for(let t=0;t<20&&j<0;t++){let tot=0;for(let x=0;x<N;x++)tot+=a[x].size+0.25;let u=r2()*tot,c=0;for(;c<N-1;c++){u-=a[c].size+0.25;if(u<=0)break;}
+        if(c!==i&&!a[i].has(c))j=c;}
+      if(j>=0){a[i].add(j);a[j].add(i);today.push([i,j]);}}
+    const copy=a.map(x=>[...x]),d=copy.map(x=>x.length);
+    const red=copy.map((nb,x)=>nb.length>0&&nb.reduce((s,y)=>s+d[y],0)/nb.length>nb.length);
+    let top=0;for(let x=1;x<N;x++)if(d[x]>d[top])top=x;
+    snaps.push({nb:copy,d,red,today,top});
+    hist.push({deg:d.reduce((p,q)=>p+q,0)/N,feel:red.filter(Boolean).length/N*100});
+  }
+}
+const S=k=>hist[k-1];
+const TEXT={
+  1:()=>`<b>Day 1.</b> Students meet their first people. Some dots are already red: the paradox starts on day one.`,
+  3:()=>`<b>Day 3.</b> A few students are getting popular fast (the biggest has ${snaps[2].d[snaps[2].top]} friends). Popular people attract new friends faster.`,
+  7:()=>`<b>Day 7.</b> Almost everyone now has a popular friend, so <span class="r">${Math.round(S(7).feel)}%</span> of the dots are red.`,
+  20:()=>`<b>Day 20.</b> Everyone keeps making friends (now ${S(20).deg.toFixed(0)} each), but the red share only changes a little: <span class="r">${Math.round(S(20).feel)}%</span>.`,
+  40:()=>`<b>End of semester.</b> ${S(40).deg.toFixed(0)} friends each, and <span class="r">${Math.round(S(40).feel)}%</span> red, close to the ${Math.round(S(7).feel)}% of week one. Everyone grew, but the popular ones grew too: the gap was set in the first week.`};
+let day=0,target=0,timer=null,tap=-1;
+const cls=$("cls");let geo=null;
+const rad=(d,cell)=>(cols===6?0.82:1)*(d?cell*0.1+Math.pow(d,0.62)*cell*0.06:cell*0.08);
+function drawCls(){
+  const W=cls.clientWidth,H=cls.clientHeight;cols=W<520?6:COLS;pos=POS[cols];
+  const pad=18,X=p=>pad+p.x*(W-2*pad),Y=p=>pad+p.y*(H-2*pad),cell=Math.min((W-2*pad)/cols,(H-2*pad)/(N/cols));geo={X,Y,cell};
+  const sn=day?snaps[day-1]:null;let s="";
+  const ln=(i,j,c,w)=>`<line x1="${X(pos[i])}" y1="${Y(pos[i])}" x2="${X(pos[j])}" y2="${Y(pos[j])}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;
+  if(sn){if(tap>=0)for(const j of sn.nb[tap])s+=ln(tap,j,INK,2.5);else for(const [i,j] of sn.today)s+=ln(i,j,LINE,1.5);}
+  const dd=sn?sn.d:Array(N).fill(0);
+  const order=[...Array(N).keys()].sort((p,q)=>dd[p]-dd[q]);
+  for(const i of order){const r=rad(dd[i],cell),fade=sn&&tap>=0&&i!==tap&&!sn.nb[tap].includes(i);
+    s+=`<circle cx="${X(pos[i])}" cy="${Y(pos[i])}" r="${r.toFixed(1)}" fill="${dd[i]?(sn.red[i]?RED:GREEN):"#ccc6b8"}" stroke="${i===tap?INK:"#fff"}" stroke-width="${i===tap?4:2}" opacity="${fade?0.25:1}"/>`;}
+  if(sn&&tap<0){const h=sn.top,hr=rad(dd[h],cell),lab=`Most popular: ${dd[h]} friends`,tw=lab.length*8.4;
+    const lx=Math.min(Math.max(X(pos[h]),tw/2+8),W-tw/2-8),above=Y(pos[h])-hr-10,ly=above>=20?above:Y(pos[h])+hr+22;
+    s+=`<text x="${lx}" y="${Math.min(ly,H-8)}" text-anchor="middle" style="font:700 14px Inter,Arial,sans-serif;fill:${INK};paint-order:stroke;stroke:#fff;stroke-width:4px">${lab}</text>`;}
+  cls.innerHTML=s;
+}
+cls.addEventListener("click",e=>{if(!geo||!day||timer)return;const sn=snaps[day-1],b=cls.getBoundingClientRect(),mx=e.clientX-b.left,my=e.clientY-b.top;let best=-1,bd=1e9;
+  for(let i=0;i<N;i++){const d=Math.hypot(geo.X(pos[i])-mx,geo.Y(pos[i])-my)-rad(sn.d[i],geo.cell);if(d<bd){bd=d;best=i;}}
+  if(bd>20||best===tap){tap=-1;$("say2").innerHTML=TEXT[day]?TEXT[day]():"";drawCls();return;}
+  tap=best;const d=sn.d[tap];
+  if(d){const fa=sn.nb[tap].reduce((s,y)=>s+sn.d[y],0)/d;
+    $("say2").innerHTML=`This student has <b>${d===1?"1 friend":d+" friends"}</b>. Their friends have <b>${fa.toFixed(1)}</b> friends on average, so the dot is `+(fa>d?`<span class="r">red</span>.`:`<span class="g">green</span>.`)+` Tap again to close.`;}
+  else $("say2").textContent="This student has no friends yet.";
+  drawCls();});
+function spark(svg,key,max,col){
+  const W=svg.clientWidth,H=svg.clientHeight;if(!day){svg.innerHTML="";return;}
+  const X=i=>(i/(DAYS-1)*(W-6)+3),pts=hist.slice(0,day).map((h,i)=>`${X(i).toFixed(1)},${(H-3-(h[key]/max)*(H-6)).toFixed(1)}`).join(" ");
+  const wk=day>=7?`<line x1="${X(6)}" x2="${X(6)}" y1="0" y2="${H}" stroke="${LINE}" stroke-width="2" stroke-dasharray="4 4"/>`:"";
+  svg.innerHTML=wk+`<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="3" stroke-linejoin="round"/>`;
+}
+const drawSparks=()=>{spark($("spD"),"deg",16,GREEN);spark($("spF"),"feel",100,RED);};
+const roCls=new ResizeObserver(drawCls);roCls.observe(cls);
+const roSp=new ResizeObserver(drawSparks);roSp.observe($("spD"));
+$("steps").innerHTML=STEPS.map(d=>`<button id="st${d}" aria-pressed="false">${d===40?"End":"Day "+d}</button>`).join("");
+function show(){
+  const h=day?S(day):{deg:0,feel:0};
+  $("sDeg").textContent=h.deg.toFixed(1);$("sFeel").textContent=Math.round(h.feel)+"%";
+  for(const d of STEPS)$("st"+d).setAttribute("aria-pressed",d===target&&day===target);
+  drawCls();drawSparks();
+}
+function goTo(t){
+  if(timer){clearInterval(timer);timer=null;}tap=-1;
+  if(t<day){day=0;}
+  target=t;$("say2").innerHTML="";
+  timer=setInterval(()=>{if(day<target){day++;show();}if(day>=target){clearInterval(timer);timer=null;$("say2").innerHTML=TEXT[target]();show();}},90);
+}
+for(const d of STEPS)$("st"+d).onclick=()=>goTo(d);
+$("next").onclick=()=>{const n=STEPS.find(d=>d>day);if(n)goTo(n);};
+$("restart").onclick=()=>{if(timer){clearInterval(timer);timer=null;}day=0;target=0;tap=-1;$("say2").innerHTML="Press <b>Next step</b> to start the semester.";show();};
+$("say2").innerHTML="Press <b>Next step</b> to start the semester.";show();
+}
+</script>
+</body>
+</html>
