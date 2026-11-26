@@ -78,8 +78,8 @@ hr{border:0;border-top:2px solid var(--line);margin:0 auto;max-width:1200px}
       <button id="reset1">Reset</button>
     </div>
     <p class="say" id="say1">Press <b>Pick someone</b>, or tap a person on the graph.</p>
-    <div class="bar"><p><span class="g">The person</span> picked has on average</p><div class="track"><div class="fill" id="barP" style="background:var(--green);width:0"></div><span class="val g" id="avgP">0</span><span>friends</span></div></div>
-    <div class="bar"><p><span class="r">Their friend</span> has on average</p><div class="track"><div class="fill" id="barF" style="background:var(--red);width:0"></div><span class="val r" id="avgF">0</span><span>friends</span></div></div>
+    <div class="bar"><p id="labP"><span class="g">The person</span> picked has on average</p><div class="track"><div class="fill" id="barP" style="background:var(--green);width:0"></div><span class="val g" id="avgP">0</span><span id="unitP">friends</span></div></div>
+    <div class="bar"><p id="labF"><span class="r">Their friends</span> have on average</p><div class="track"><div class="fill" id="barF" style="background:var(--red);width:0"></div><span class="val r" id="avgF">0</span><span>friends</span></div></div>
     <p class="say" id="sum1"></p>
     <details><summary>Why does this happen?</summary><p>A popular person is the friend of many people. So when you pick someone and look at one of their friends, you very often land on a popular person. Unpopular people are the friend of only a few, so they rarely show up as "the friend". That is why your friends, on average, have more friends than you.</p></details>
   </div>
@@ -140,10 +140,15 @@ const net=$("net");
 function drawNet(){
   const W=net.clientWidth,H=net.clientHeight,pad=40,X=a=>pad+a.x*(W-2*pad),Y=a=>pad*0.8+a.y*(H-2*pad);
   let s="";
-  for(const [i,j] of edges){const on=(i===selP&&j===selF)||(j===selP&&i===selF);
-    s+=`<line x1="${X(nodes[i])}" y1="${Y(nodes[i])}" x2="${X(nodes[j])}" y2="${Y(nodes[j])}" stroke="${on?RED:LINE}" stroke-width="${on?6:2.5}" stroke-linecap="round"/>`;}
+  const nP=selP>=0?adj[selP]:new Set(),nF=selF>=0?adj[selF]:new Set();
+  const eCol=(i,j)=>{if((i===selP&&j===selF)||(j===selP&&i===selF))return[RED,6];if(i===selF||j===selF)return[RED,4];if(i===selP||j===selP)return[GREEN,4];return[LINE,2.5];};
+  const ord=[...edges].sort((a,b)=>eCol(...a)[1]-eCol(...b)[1]);
+  for(const [i,j] of ord){const [c,w]=eCol(i,j);
+    s+=`<line x1="${X(nodes[i])}" y1="${Y(nodes[i])}" x2="${X(nodes[j])}" y2="${Y(nodes[j])}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;}
   nodes.forEach((a,i)=>{const r=5+Math.sqrt(deg(i))*5,c=i===selP?GREEN:(i===selF?RED:"#b9b2a3"),big=i===selP||i===selF;
-    s+=`<circle cx="${X(a)}" cy="${Y(a)}" r="${big?r+5:r}" fill="${c}" stroke="#fff" stroke-width="3"/>`;});
+    const inP=!big&&nP.has(i),inF=!big&&nF.has(i);
+    s+=`<circle cx="${X(a)}" cy="${Y(a)}" r="${big?r+5:r}" fill="${c}" stroke="${inP?GREEN:(inF?RED:"#fff")}" stroke-width="${inP||inF?4:3}"/>`;
+    if(inP&&inF)s+=`<circle cx="${X(a)}" cy="${Y(a)}" r="${r+5}" fill="none" stroke="${RED}" stroke-width="3"/>`;});
   nodes.forEach((a,i)=>{const r=5+Math.sqrt(deg(i))*5,big=i===selP||i===selF;
     s+=`<text x="${X(a)}" y="${Y(a)+r+(big?20:16)}" text-anchor="middle" style="font:${big?700:400} ${big?15:13}px Inter,Arial,sans-serif;fill:${i===selP?GREEN:(i===selF?RED:"#5a5a5a")};paint-order:stroke;stroke:#fff;stroke-width:4px">${names[i]}</text>`;});
   net.innerHTML=s;
@@ -152,13 +157,17 @@ const roNet=new ResizeObserver(drawNet);roNet.observe(net);
 const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
 const maxDeg=Math.max(...adj.map(x=>x.size));
 function pickOne(who){const p=who>=0?who:Math.floor(Math.random()*N1),nb=[...adj[p]],f=nb[Math.floor(Math.random()*nb.length)];pk.p.push(deg(p));pk.f.push(deg(f));if(deg(f)>deg(p))pk.win++;return [p,f];}
+let one=null;
+const fAvg=i=>avg([...adj[i]].map(deg));
 function showHat(){
-  const p=avg(pk.p),f=avg(pk.f),n=pk.p.length;
-  $("avgP").textContent=p.toFixed(1);$("avgF").textContent=f.toFixed(1);
+  const n=pk.p.length,p=one?one.p:avg(pk.p),f=one?one.f:avg(pk.f);
+  $("labP").innerHTML=one?`<span class="g">${names[selP]}</span> has`:`<span class="g">The people</span> picked have on average`;
+  $("labF").innerHTML=one?`<span class="r">${names[selP]}'s friends</span> have on average`:`<span class="r">Their friends</span> have on average`;
+  $("avgP").textContent=one?String(p):p.toFixed(1);$("unitP").textContent=one&&p===1?"friend":"friends";$("avgF").textContent=f.toFixed(1);
   $("barP").style.width=(p/maxDeg*60)+"%";$("barF").style.width=(f/maxDeg*60)+"%";
   $("sum1").innerHTML=n>=5?`In <span class="r">${pk.win} picks out of ${n}</span>, the friend had more friends than the person.`:"";
 }
-function pickShow(who){[selP,selF]=pickOne(who);
+function pickShow(who){[selP,selF]=pickOne(who);one={p:deg(selP),f:fAvg(selP)};
   const P=names[selP],F=names[selF];
   $("say1").innerHTML=`<span class="g">${P}</span> has ${fr(deg(selP))}. ${P}'s friend <span class="r">${F}</span> has ${fr(deg(selF))}.`+(deg(selF)>deg(selP)?` The friend is more popular.`:deg(selF)<deg(selP)?` This time the person wins.`:` Same number.`);
   drawNet();showHat();}
@@ -166,8 +175,8 @@ $("pick1").onclick=()=>pickShow(-1);
 net.addEventListener("click",e=>{const b=net.getBoundingClientRect(),mx=e.clientX-b.left,my=e.clientY-b.top,W=net.clientWidth,H=net.clientHeight,pad=40;
   let best=-1,bd=1e9;nodes.forEach((a,i)=>{const d=Math.hypot(pad+a.x*(W-2*pad)-mx,pad*0.8+a.y*(H-2*pad)-my)-(5+Math.sqrt(deg(i))*5);if(d<bd){bd=d;best=i;}});
   if(best>=0&&bd<22)pickShow(best);});
-$("pick100").onclick=()=>{for(let k=0;k<100;k++)pickOne();selP=-1;selF=-1;$("say1").innerHTML="Done: 100 people picked, and one friend of each.";drawNet();showHat();};
-$("reset1").onclick=()=>{pk.p=[];pk.f=[];pk.win=0;selP=-1;selF=-1;$("say1").innerHTML="Press <b>Pick someone</b>, or tap a person on the graph.";drawNet();showHat();};
+$("pick100").onclick=()=>{one=null;for(let k=0;k<100;k++)pickOne();selP=-1;selF=-1;$("say1").innerHTML="Done: 100 people picked, and one friend of each.";drawNet();showHat();};
+$("reset1").onclick=()=>{one=null;pk.p=[];pk.f=[];pk.win=0;selP=-1;selF=-1;$("say1").innerHTML="Press <b>Pick someone</b>, or tap a person on the graph.";drawNet();showHat();};
 showHat();
 
 /* ---------- 2. A class makes friends ---------- */
