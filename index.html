@@ -140,15 +140,15 @@ const net=$("net");
 function drawNet(){
   const W=net.clientWidth,H=net.clientHeight,pad=40,X=a=>pad+a.x*(W-2*pad),Y=a=>pad*0.8+a.y*(H-2*pad);
   let s="";
-  const nP=selP>=0?adj[selP]:new Set(),nF=selF>=0?adj[selF]:new Set();
-  const eCol=(i,j)=>{if((i===selP&&j===selF)||(j===selP&&i===selF))return[RED,6];if(i===selF||j===selF)return[RED,4];if(i===selP||j===selP)return[GREEN,4];return[LINE,2.5];};
+  const nP=selP>=0?adj[selP]:new Set();
+  const eCol=(i,j)=>{if((i===selP&&j===selF)||(j===selP&&i===selF))return[RED,6];if(i===selP||j===selP)return[GREEN,4];return[LINE,2.5];};
   const ord=[...edges].sort((a,b)=>eCol(...a)[1]-eCol(...b)[1]);
   for(const [i,j] of ord){const [c,w]=eCol(i,j);
     s+=`<line x1="${X(nodes[i])}" y1="${Y(nodes[i])}" x2="${X(nodes[j])}" y2="${Y(nodes[j])}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;}
   nodes.forEach((a,i)=>{const r=5+Math.sqrt(deg(i))*5,c=i===selP?GREEN:(i===selF?RED:"#b9b2a3"),big=i===selP||i===selF;
-    const inP=!big&&nP.has(i),inF=!big&&nF.has(i);
-    s+=`<circle cx="${X(a)}" cy="${Y(a)}" r="${big?r+5:r}" fill="${c}" stroke="${inP?GREEN:(inF?RED:"#fff")}" stroke-width="${inP||inF?4:3}"/>`;
-    if(inP&&inF)s+=`<circle cx="${X(a)}" cy="${Y(a)}" r="${r+5}" fill="none" stroke="${RED}" stroke-width="3"/>`;});
+    const inP=!big&&nP.has(i);
+    s+=`<circle cx="${X(a)}" cy="${Y(a)}" r="${big?r+5:r}" fill="${c}" stroke="${inP?GREEN:"#fff"}" stroke-width="${inP?4:3}"/>`;
+    if(inP||(big&&selP>=0))s+=`<text x="${X(a)}" y="${Y(a)+4.5}" text-anchor="middle" style="font:700 13px Inter,Arial,sans-serif;fill:${big?"#fff":RED};pointer-events:none">${deg(i)}</text>`;});
   nodes.forEach((a,i)=>{const r=5+Math.sqrt(deg(i))*5,big=i===selP||i===selF;
     s+=`<text x="${X(a)}" y="${Y(a)+r+(big?20:16)}" text-anchor="middle" style="font:${big?700:400} ${big?15:13}px Inter,Arial,sans-serif;fill:${i===selP?GREEN:(i===selF?RED:"#5a5a5a")};paint-order:stroke;stroke:#fff;stroke-width:4px">${names[i]}</text>`;});
   net.innerHTML=s;
@@ -156,7 +156,7 @@ function drawNet(){
 const roNet=new ResizeObserver(drawNet);roNet.observe(net);
 const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
 const maxDeg=Math.max(...adj.map(x=>x.size));
-function pickOne(who){const p=who>=0?who:Math.floor(Math.random()*N1),nb=[...adj[p]],f=nb[Math.floor(Math.random()*nb.length)];pk.p.push(deg(p));pk.f.push(deg(f));if(deg(f)>deg(p))pk.win++;return [p,f];}
+function pickOne(who){const p=who>=0?who:Math.floor(Math.random()*N1),f=fAvg(p);pk.p.push(deg(p));pk.f.push(f);if(f>deg(p))pk.win++;return p;}
 let one=null;
 const fAvg=i=>avg([...adj[i]].map(deg));
 function showHat(){
@@ -165,17 +165,17 @@ function showHat(){
   $("labF").innerHTML=one?`<span class="r">${names[selP]}'s friends</span> have on average`:`<span class="r">Their friends</span> have on average`;
   $("avgP").textContent=one?String(p):p.toFixed(1);$("unitP").textContent=one&&p===1?"friend":"friends";$("avgF").textContent=f.toFixed(1);
   $("barP").style.width=(p/maxDeg*60)+"%";$("barF").style.width=(f/maxDeg*60)+"%";
-  $("sum1").innerHTML=n>=5?`In <span class="r">${pk.win} picks out of ${n}</span>, the friend had more friends than the person.`:"";
+  $("sum1").innerHTML=n>=5?`In <span class="r">${pk.win} people out of ${n}</span>, their friends had more friends on average.`:"";
 }
-function pickShow(who){[selP,selF]=pickOne(who);one={p:deg(selP),f:fAvg(selP)};
-  const P=names[selP],F=names[selF];
-  $("say1").innerHTML=`<span class="g">${P}</span> has ${fr(deg(selP))}. ${P}'s friend <span class="r">${F}</span> has ${fr(deg(selF))}.`+(deg(selF)>deg(selP)?` The friend is more popular.`:deg(selF)<deg(selP)?` This time the person wins.`:` Same number.`);
+function pickShow(who){selP=pickOne(who);selF=-1;one={p:deg(selP),f:fAvg(selP)};
+  const P=names[selP],fa=one.f.toFixed(1);
+  $("say1").innerHTML=`<span class="g">${P}</span> has ${fr(deg(selP))}. <span class="r">${P}'s friends</span> have ${fa} friends on average.`+(one.f>one.p?` The friends are more popular.`:one.f<one.p?` This time the person wins.`:` Same number.`);
   drawNet();showHat();}
 $("pick1").onclick=()=>pickShow(-1);
 net.addEventListener("click",e=>{const b=net.getBoundingClientRect(),mx=e.clientX-b.left,my=e.clientY-b.top,W=net.clientWidth,H=net.clientHeight,pad=40;
   let best=-1,bd=1e9;nodes.forEach((a,i)=>{const d=Math.hypot(pad+a.x*(W-2*pad)-mx,pad*0.8+a.y*(H-2*pad)-my)-(5+Math.sqrt(deg(i))*5);if(d<bd){bd=d;best=i;}});
   if(best>=0&&bd<22)pickShow(best);});
-$("pick100").onclick=()=>{one=null;for(let k=0;k<100;k++)pickOne();selP=-1;selF=-1;$("say1").innerHTML="Done: 100 people picked, and one friend of each.";drawNet();showHat();};
+$("pick100").onclick=()=>{one=null;for(let k=0;k<100;k++)pickOne();selP=-1;selF=-1;$("say1").innerHTML="Done: 100 people picked at random, and the friends of each.";drawNet();showHat();};
 $("reset1").onclick=()=>{one=null;pk.p=[];pk.f=[];pk.win=0;selP=-1;selF=-1;$("say1").innerHTML="Press <b>Pick someone</b>, or tap a person on the graph.";drawNet();showHat();};
 showHat();
 
